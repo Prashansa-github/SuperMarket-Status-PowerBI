@@ -1,0 +1,137 @@
+expression Part-BAQ =
+		let
+		    Source = PowerPlatform.Dataflows(null),
+		    Workspaces = Source{[Id="Workspaces"]}[Data],
+		    #"[WORKSPACE_ID_1]" = Workspaces{[workspaceId="[WORKSPACE_ID_1]"]}[Data],
+		    #"[DATAFLOW_ID_1]" = #"[WORKSPACE_ID_1]"{[dataflowId="[DATAFLOW_ID_1]"]}[Data],
+		    #"Part-BAQ_" = #"[DATAFLOW_ID_1]"{[entity="Part-BAQ",version=""]}[Data],
+		    #"Added Conditional Column" = Table.AddColumn(#"Part-BAQ_", "Custom Class ID", each if [ClassID] = "RAW" then "RAW" else if [ClassID] = "COMP" then "COMP" else if [ProdCode] = "200" then "HANDLE" else if [ProdCode] = "602" then "HANDLE" else if [ProdCode] = "603" then "HANDLE" else if [ClassID] = "0070" then 70 else " "),
+		    #"Changed Type" = Table.TransformColumnTypes(#"Added Conditional Column",{{"Custom Class ID", type text}}),
+		    #"Filtered Rows" = Table.SelectRows(#"Changed Type", each ([Custom Class ID] <> " ")),
+		    #"Replaced Value" = Table.ReplaceValue(#"Filtered Rows","70","0070",Replacer.ReplaceText,{"Custom Class ID"})
+		in
+		    #"Replaced Value"
+	lineageTag: 94a7f65f-c31c-444d-991e-061750344d82
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
+expression SupplierJobs =
+		let
+		    Source = PowerPlatform.Dataflows(null),
+		    Workspaces = Source{[Id="Workspaces"]}[Data],
+		    #"[WORKSPACE_ID_2]" = Workspaces{[workspaceId="[WORKSPACE_ID_2]"]}[Data],
+		    #"[DATAFLOW_ID_2]" = #"[WORKSPACE_ID_2]"{[dataflowId="[DATAFLOW_ID_2]"]}[Data],
+		    Parts_Sply_Dmd_ = #"[DATAFLOW_ID_2]"{[entity="Parts_Sply_Dmd",version=""]}[Data],
+		    #"Filtered Rows" = Table.SelectRows(Parts_Sply_Dmd_, each ([value.PartDtl_DueDate] <> null and [value.PartDtl_DueDate] <> "") and ([value.PartDtl_RequirementFlag] = false)),
+		    #"Changed Type" = Table.TransformColumnTypes(#"Filtered Rows",{{"value.PartDtl_DueDate", type date}, {"value.Calculated_ReqDueDate", type date}, {"value.POHeader_PromiseDate", type date}, {"value.PartDtl_Quantity", Currency.Type}}),
+		    #"Removed Other Columns1" = Table.SelectColumns(#"Changed Type",{"value.PartDtl_PartNum", "value.PartDtl_DueDate", "value.PartDtl_RequirementFlag", "value.PartDtl_Quantity", "value.PartDtl_JobNum", "value.JobOper1_OpCode", "value.PartQtyAttr_OnHandQty"}),
+		    #"Grouped Rows1" = Table.Group(#"Removed Other Columns1", {"value.PartDtl_PartNum", "value.PartDtl_DueDate", "value.PartDtl_RequirementFlag", "value.PartDtl_Quantity", "value.PartDtl_JobNum", "value.JobOper1_OpCode", "value.PartQtyAttr_OnHandQty"}, {{"Count", each Table.RowCount(_), Int64.Type}}),
+		    #"Added Custom" = Table.AddColumn(#"Grouped Rows1", "Demand in Next 30 Days", each if [value.PartDtl_DueDate] <= Date.AddDays(Date.From(DateTimeZone.UtcNow()),30) then [value.PartDtl_Quantity] else 0),
+		    #"Changed Type1" = Table.TransformColumnTypes(#"Added Custom",{{"Demand in Next 30 Days", type number}}),
+		    #"Added Custom1" = Table.AddColumn(#"Changed Type1", "Demand/Stock", each if [value.PartDtl_DueDate] <= Date.AddDays(Date.From(DateTimeZone.UtcNow()),30) then "Demand" else "Stock"),
+		    #"Merged Columns" = Table.CombineColumns(#"Added Custom1",{"value.PartDtl_JobNum", "value.JobOper1_OpCode"},Combiner.CombineTextByDelimiter(";", QuoteStyle.None),"Location"),
+		    #"Grouped Rows" = Table.Group(#"Merged Columns", {"value.PartDtl_PartNum", "Demand/Stock"}, {{"DemandInNext30Days", each List.Sum([Demand in Next 30 Days]), type nullable number}, {"SupplyQty", each List.Sum([value.PartDtl_Quantity]), type nullable number}, {"Count", each _, type table [value.PartPlant_PersonID=nullable text, value.PartDtl_PartNum=nullable text, value.PartDtl_DueDate=nullable date, value.PartDtl_RequirementFlag=nullable logical, value.PartDtl_Quantity=nullable number, Location=text, value.JobHead_PartNum=nullable text, value.Calculated_ReqDueDate=nullable date, value.POHeader_PromiseDate=nullable date, Demand in Next 30 Days=nullable number, #"Demand/Stock"=text]}}),
+		    #"Added Custom2" = Table.AddColumn(#"Grouped Rows", "Custom", each [Count][Location]),
+		    #"Added Custom3" = Table.AddColumn(#"Added Custom2", "SupplierJobs", each Text.Combine([Custom]," / ")),
+		    #"Removed Other Columns" = Table.SelectColumns(#"Added Custom3",{"value.PartDtl_PartNum", "Demand/Stock", "DemandInNext30Days", "SupplyQty", "SupplierJobs"}),
+		    #"Changed Type2" = Table.TransformColumnTypes(#"Removed Other Columns",{{"SupplierJobs", type text}}),
+		    #"Changed Type3" = Table.TransformColumnTypes(#"Changed Type2",{{"Demand/Stock", type text}}),
+		    #"Duplicated Column" = Table.DuplicateColumn(#"Changed Type3", "value.PartDtl_PartNum", "value.PartDtl_PartNum - Copy"),
+		    #"Duplicated Column1" = Table.DuplicateColumn(#"Duplicated Column", "Demand/Stock", "Demand/Stock - Copy"),
+		    #"Merged Columns1" = Table.CombineColumns(#"Duplicated Column1",{"value.PartDtl_PartNum - Copy", "Demand/Stock - Copy"},Combiner.CombineTextByDelimiter("-", QuoteStyle.None),"Key")
+		in
+		    #"Merged Columns1"
+	lineageTag: d20f62bb-a7ba-482f-9878-c473b5e91c00
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
+expression PurchaseOrders =
+		let
+		    Source = PowerPlatform.Dataflows(null),
+		    Workspaces = Source{[Id="Workspaces"]}[Data],
+		    #"[WORKSPACE_ID_2]" = Workspaces{[workspaceId="[WORKSPACE_ID_2]"]}[Data],
+		    #"[DATAFLOW_ID_2]" = #"[WORKSPACE_ID_2]"{[dataflowId="[DATAFLOW_ID_2]"]}[Data],
+		    Parts_Sply_Dmd_ = #"[DATAFLOW_ID_2]"{[entity="Parts_Sply_Dmd",version=""]}[Data],
+		    #"Filtered Rows" = Table.SelectRows(Parts_Sply_Dmd_, each ([value.PartDtl_DueDate] <> null and [value.PartDtl_DueDate] <> "")),
+		    #"Removed Other Columns" = Table.SelectColumns(#"Filtered Rows",{"value.PartDtl_PartNum", "value.PartQtyAttr_OnHandQty", "value.Calculated_POLNRL", "value.PODetail_DueDate", "value.PODetail_XOrderQty", "value.POHeader_PromiseDate", "value.PODetail_IUM"}),
+		    #"Filtered Rows1" = Table.SelectRows(#"Removed Other Columns", each ([value.Calculated_POLNRL] <> "")),
+		    #"Removed Duplicates" = Table.Distinct(#"Filtered Rows1"),
+		    #"Changed Type" = Table.TransformColumnTypes(#"Removed Duplicates",{{"value.PODetail_DueDate", type date}}),
+		    #"Added Custom" = Table.AddColumn(#"Changed Type", "Demand/Stock", each if [value.PODetail_DueDate] <= Date.AddDays(Date.From(DateTimeZone.UtcNow()),30) then "Demand" else "Stock"),
+		    #"Changed Type1" = Table.TransformColumnTypes(#"Added Custom",{{"Demand/Stock", type text}}),
+		    #"Duplicated Column" = Table.DuplicateColumn(#"Changed Type1", "value.PartDtl_PartNum", "value.PartDtl_PartNum - Copy"),
+		    #"Duplicated Column1" = Table.DuplicateColumn(#"Duplicated Column", "Demand/Stock", "Demand/Stock - Copy"),
+		    #"Merged Columns" = Table.CombineColumns(#"Duplicated Column1",{"value.PartDtl_PartNum - Copy", "Demand/Stock - Copy"},Combiner.CombineTextByDelimiter("-", QuoteStyle.None),"Key"),
+		    #"Grouped Rows" = Table.Group(#"Merged Columns", {"value.PartDtl_PartNum", "Demand/Stock", "Key"}, {{"POSupplyQty", each List.Sum([value.PODetail_XOrderQty]), type nullable number}, {"Count", each _, type table [value.PartDtl_PartNum=nullable text, value.PartQtyAttr_OnHandQty=nullable number, value.Calculated_POLNRL=nullable text, value.PODetail_DueDate=nullable date, value.PODetail_XOrderQty=nullable number, value.POHeader_PromiseDate=nullable datetime, value.PODetail_IUM=nullable text, #"Demand/Stock"=nullable text, Key=text]}}),
+		    #"Added Custom1" = Table.AddColumn(#"Grouped Rows", "Custom", each [Count][value.Calculated_POLNRL]),
+		    #"Added Custom2" = Table.AddColumn(#"Added Custom1", "PurchaseOrders", each Text.Combine([Custom]," / ")),
+		    #"Changed Type2" = Table.TransformColumnTypes(#"Added Custom2",{{"PurchaseOrders", type text}}),
+		    #"Removed Other Columns1" = Table.SelectColumns(#"Changed Type2",{"value.PartDtl_PartNum", "Demand/Stock", "Key", "POSupplyQty", "PurchaseOrders"})
+		in
+		    #"Removed Other Columns1"
+	lineageTag: 54c85b26-86c8-4cba-9420-6b7f9199605e
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
+expression StockPrice =
+		let
+		    Source = SharePoint.Files("https://[COMPANY_SHAREPOINT_SITE]", [ApiVersion = 15]),
+		    #"Filtered Rows" = Table.SelectRows(Source, each ([Name] = "StkStat.csv")),
+		    #"StkStat csv_https://[SHAREPOINT_PATH]" = #"Filtered Rows"{[Name="StkStat.csv",#"Folder Path"="https://[COMPANY_SHAREPOINT_SITE]Power BI Reports Data/SFG & Inventory - PBI/"]}[Content],
+		    #"Imported CSV" = Csv.Document(#"StkStat csv_https://[SHAREPOINT_PATH]",[Delimiter=",", Columns=10, Encoding=65001, QuoteStyle=QuoteStyle.None]),
+		    #"Promoted Headers" = Table.PromoteHeaders(#"Imported CSV", [PromoteAllScalars=true]),
+		    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"PartNum", type text}, {"PartDescription", type text}, {"PartClass", type text}, {"LotNumber", type text}, {"Type", type text}, {"Qty", Int64.Type}, {"UOM", type text}, {"UnitCost", Currency.Type}, {"Mth", type text}, {"ExtendedCost", Currency.Type}}),
+		    #"Split Column by Delimiter" = Table.SplitColumn(#"Changed Type", "PartNum", Splitter.SplitTextByEachDelimiter({":"}, QuoteStyle.Csv, false), {"PartNum.1", "PartNum.2"}),
+		    #"Changed Type1" = Table.TransformColumnTypes(#"Split Column by Delimiter",{{"PartNum.1", type text}, {"PartNum.2", type text}}),
+		    #"Trimmed Text" = Table.TransformColumns(#"Changed Type1",{{"PartNum.2", Text.Trim, type text}}),
+		    #"Removed Columns" = Table.RemoveColumns(#"Trimmed Text",{"PartNum.1"}),
+		    #"Grouped Rows" = Table.Group(#"Removed Columns", {"PartNum.2", "PartDescription", "PartClass"}, {{"AvgUnitPrice", each List.Average([UnitCost]), type nullable number}, {"ExtendedCost", each List.Sum([ExtendedCost]), type nullable number}, {"Quantity", each List.Sum([Qty]), type nullable number}}),
+		    #"Changed Type2" = Table.TransformColumnTypes(#"Grouped Rows",{{"ExtendedCost", Currency.Type}, {"AvgUnitPrice", Currency.Type}}),
+		    #"Removed Blank Rows" = Table.SelectRows(#"Changed Type2", each not List.IsEmpty(List.RemoveMatchingItems(Record.FieldValues(_), {"", null}))),
+		    #"Filtered Rows1" = Table.SelectRows(#"Removed Blank Rows", each [PartNum.2] <> null and [PartNum.2] <> ""),
+		    #"Filtered Rows2" = Table.SelectRows(#"Filtered Rows1", each ([AvgUnitPrice] <> null and [AvgUnitPrice] <> "") and ([PartClass] = "0070" or [PartClass] = "COMP" or [PartClass] = "FG" or [PartClass] = "RAW"))
+		in
+		    #"Filtered Rows2"
+	lineageTag: 0d96b7df-5d7d-462b-99dc-2d853de93448
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
+expression StockConsumption =
+		let
+		    Source = PowerPlatform.Dataflows(null),
+		    Workspaces = Source{[Id="Workspaces"]}[Data],
+		    #"[WORKSPACE_ID_2]" = Workspaces{[workspaceId="[WORKSPACE_ID_2]"]}[Data],
+		    #"[DATAFLOW_ID_2]" = #"[WORKSPACE_ID_2]"{[dataflowId="[DATAFLOW_ID_2]"]}[Data],
+		    Parts_Sply_Dmd_ = #"[DATAFLOW_ID_2]"{[entity="Parts_Sply_Dmd",version=""]}[Data],
+		    #"Filtered Rows" = Table.SelectRows(Parts_Sply_Dmd_, each ([value.PartDtl_DueDate] <> null and [value.PartDtl_DueDate] <> "") and ([value.PartDtl_RequirementFlag] = true)),
+		    #"Duplicated Column" = Table.DuplicateColumn(#"Filtered Rows", "value.PartDtl_DueDate", "value.PartDtl_DueDate - Copy"),
+		    #"Extracted Year" = Table.TransformColumns(#"Duplicated Column",{{"value.PartDtl_DueDate - Copy", Date.Year, Int64.Type}}),
+		    #"Extracted Month" = Table.TransformColumns(#"Extracted Year",{{"value.PartDtl_DueDate", Date.Month, Int64.Type}}),
+		    #"Removed Other Columns" = Table.SelectColumns(#"Extracted Month",{"value.PartDtl_PartNum", "value.PartDtl_DueDate", "value.PartDtl_RequirementFlag", "value.PartDtl_Quantity", "value.PartQtyAttr_OnHandQty", "value.PartDtl_DueDate - Copy"}),
+		    #"Replaced Value1" = Table.ReplaceValue(#"Removed Other Columns",null,0,Replacer.ReplaceValue,{"value.PartQtyAttr_OnHandQty"}),
+		    #"Grouped Rows1" = Table.Group(#"Replaced Value1", {"value.PartDtl_PartNum", "value.PartDtl_RequirementFlag", "value.PartDtl_DueDate", "value.PartQtyAttr_OnHandQty", "value.PartDtl_DueDate - Copy"}, {{"Quantity", each List.Sum([value.PartDtl_Quantity]), type nullable number}}),
+		    #"Merged Queries3" = Table.NestedJoin(#"Grouped Rows1", {"value.PartDtl_PartNum"}, StockPrice, {"PartNum.2"}, "StockPrice", JoinKind.LeftOuter),
+		    #"Expanded StockPrice" = Table.ExpandTableColumn(#"Merged Queries3", "StockPrice", {"AvgUnitPrice", "ExtendedCost"}, {"AvgUnitPrice", "ExtendedCost"}),
+		    #"Replaced Value" = Table.ReplaceValue(#"Expanded StockPrice",null,0,Replacer.ReplaceValue,{"AvgUnitPrice", "ExtendedCost"}),
+		    #"Added Custom" = Table.AddColumn(#"Replaced Value", "Stock$", each if [Quantity] < [value.PartQtyAttr_OnHandQty] then [Quantity]*[AvgUnitPrice] else 0),
+		    #"Changed Type" = Table.TransformColumnTypes(#"Added Custom",{{"Stock$", Currency.Type}}),
+		    #"Grouped Rows" = Table.Group(#"Changed Type", {"value.PartDtl_PartNum", "value.PartDtl_DueDate", "value.PartDtl_DueDate - Copy", "AvgUnitPrice", "ExtendedCost"}, {{"Quantity", each List.Sum([Quantity]), type nullable number}, {"OnHand", each List.Sum([value.PartQtyAttr_OnHandQty]), type nullable number}, {"Stock $", each List.Sum([#"Stock$"]), type nullable number}}),
+		    #"Changed Type1" = Table.TransformColumnTypes(#"Grouped Rows",{{"Stock $", Currency.Type}, {"AvgUnitPrice", Currency.Type}}),
+		    #"Merged Queries" = Table.NestedJoin(#"Changed Type1", {"value.PartDtl_PartNum"}, #"Part-BAQ", {"PartNum"}, "Part-BAQ", JoinKind.LeftOuter),
+		    #"Expanded Part-BAQ" = Table.ExpandTableColumn(#"Merged Queries", "Part-BAQ", {"ClassID", "ProdCode"}, {"ClassID", "ProdCode"})
+		in
+		    #"Expanded Part-BAQ"
+	lineageTag: 1059c9d6-8bff-4666-8565-05a3525ad9a1
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

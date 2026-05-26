@@ -1,0 +1,83 @@
+table Demand/StockOperations
+	lineageTag: e5bf2b65-68f1-4444-9c8f-d84fee9eb9db
+
+	measure InventoryHealth =
+			
+			VAR StockParts = CALCULATE(DISTINCTCOUNT('DemandInNext30Days/Stock'[value.PartDtl_PartNum]),'DemandInNext30Days/Stock'[Demand/Stock] = "Stock")
+			VAR DemandParts = CALCULATE(DISTINCTCOUNT('DemandInNext30Days/Stock'[value.PartDtl_PartNum]),'DemandInNext30Days/Stock'[Demand/Stock] = "Demand")
+			RETURN StockParts / (StockParts+ DemandParts)
+		formatString: 0%;-0%;0%
+		lineageTag: e652c8ae-ae57-41d5-88b0-1e5caa86b525
+
+	column 'value.PartDtl_PartNum'
+		dataType: string
+		lineageTag: dbc3f652-16ab-44ea-b8e4-05eb4c91e672
+		summarizeBy: none
+		sourceColumn: value.PartDtl_PartNum
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'value.JobOper1_OpCode'
+		dataType: string
+		lineageTag: 253dfddd-cf50-4007-8869-5fbc346e40c5
+		summarizeBy: none
+		sourceColumn: value.JobOper1_OpCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column Demand/Stock
+		dataType: string
+		lineageTag: bb05990c-c99f-4554-86af-8ceb6380a5ee
+		summarizeBy: none
+		sourceColumn: Demand/Stock
+
+		annotation SummarizationSetBy = Automatic
+
+	column Key
+		dataType: string
+		lineageTag: 02739792-e2c6-459a-80af-00301b66b110
+		summarizeBy: none
+		sourceColumn: Key
+
+		annotation SummarizationSetBy = Automatic
+
+	column Count
+		dataType: int64
+		formatString: 0
+		lineageTag: 26914960-ccae-493a-b896-0464c627d682
+		summarizeBy: sum
+		sourceColumn: Count
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Demand/StockOperations = m
+		mode: import
+		source =
+				let
+				    Source = PowerPlatform.Dataflows(null),
+				    Workspaces = Source{[Id="Workspaces"]}[Data],
+				    #"[WORKSPACE_ID_2]" = Workspaces{[workspaceId="[WORKSPACE_ID_2]"]}[Data],
+				    #"[DATAFLOW_ID_2]" = #"[WORKSPACE_ID_2]"{[dataflowId="[DATAFLOW_ID_2]"]}[Data],
+				    Parts_Sply_Dmd_ = #"[DATAFLOW_ID_2]"{[entity="Parts_Sply_Dmd",version=""]}[Data],
+				    #"Removed Other Columns" = Table.SelectColumns(Parts_Sply_Dmd_,{"value.PartDtl_PartNum", "value.PartDtl_DueDate", "value.PartDtl_RequirementFlag", "value.PartDtl_Quantity", "value.PartDtl_JobNum", "value.JobOper1_OpCode", "value.PartQtyAttr_OnHandQty"}),
+				    #"Filtered Rows2" = Table.SelectRows(#"Removed Other Columns", each ([value.PartDtl_RequirementFlag] = false)),
+				    #"Filtered Rows1" = Table.SelectRows(#"Filtered Rows2", each [value.PartDtl_DueDate] <> null and [value.PartDtl_DueDate] <> ""),
+				    #"Filtered Rows" = Table.SelectRows(#"Filtered Rows1", each [value.PartDtl_PartNum] <> null and [value.PartDtl_PartNum] <> ""),
+				    #"Changed Type1" = Table.TransformColumnTypes(#"Filtered Rows",{{"value.PartDtl_DueDate", type date}}),
+				    #"Added Custom1" = Table.AddColumn(#"Changed Type1", "DemandInNext30Days", each if [value.PartDtl_DueDate] <= Date.AddDays(Date.From(DateTimeZone.UtcNow()),30) then [value.PartDtl_Quantity] else 0),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Added Custom1",{{"DemandInNext30Days", type number}}),
+				    #"Replaced Value" = Table.ReplaceValue(#"Changed Type",null,0,Replacer.ReplaceValue,{"value.PartQtyAttr_OnHandQty"}),
+				    #"Added Custom" = Table.AddColumn(#"Replaced Value", "Demand/Stock", each if [DemandInNext30Days] > [value.PartQtyAttr_OnHandQty] then "Demand" else "Stock"),
+				    #"Changed Type2" = Table.TransformColumnTypes(#"Added Custom",{{"Demand/Stock", type text}}),
+				    #"Duplicated Column" = Table.DuplicateColumn(#"Changed Type2", "value.PartDtl_PartNum", "value.PartDtl_PartNum - Copy"),
+				    #"Duplicated Column1" = Table.DuplicateColumn(#"Duplicated Column", "Demand/Stock", "Demand/Stock - Copy"),
+				    #"Merged Columns" = Table.CombineColumns(#"Duplicated Column1",{"value.PartDtl_PartNum - Copy", "Demand/Stock - Copy"},Combiner.CombineTextByDelimiter("-", QuoteStyle.None),"Key"),
+				    #"Grouped Rows" = Table.Group(#"Merged Columns", {"value.PartDtl_PartNum", "value.JobOper1_OpCode", "Demand/Stock", "Key"}, {{"Count", each Table.RowCount(_), Int64.Type}}),
+				    #"Replaced Value1" = Table.ReplaceValue(#"Grouped Rows","","Job Completed/Job Not Started",Replacer.ReplaceValue,{"value.JobOper1_OpCode"})
+				in
+				    #"Replaced Value1"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

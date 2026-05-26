@@ -1,0 +1,22 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 1
+
+annotation PBI_QueryOrder = ["Part-BAQ","Refresh TimeStamp","Demand/StockOperations","SupplierJobs","DemandInNext30Days/Stock","PurchaseOrders","StockPrice","StockConsumption"]
+
+annotation PBI_ProTooling = ["DevMode"]
+
+ref table DateTableTemplate_dc9ccda9-6002-4831-a90e-54f4ecb07a59
+ref table 'Refresh TimeStamp'
+ref table LocalDateTable_c42c530d-bded-4f8c-9258-53262b215e12
+ref table DemandInNext30Days/Stock
+ref table Demand/StockOperations
+
+ref cultureInfo en-US
+

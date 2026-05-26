@@ -1,0 +1,212 @@
+table DemandInNext30Days/Stock
+	lineageTag: 2154285e-6b75-4b07-840d-05c8cc7cf452
+
+	column 'value.PartDtl_PartNum'
+		dataType: string
+		lineageTag: fdda8abf-36bc-4728-a8dd-d4be67623d94
+		summarizeBy: none
+		sourceColumn: value.PartDtl_PartNum
+
+		annotation SummarizationSetBy = Automatic
+
+	column Demand/Stock
+		dataType: string
+		lineageTag: a54d1014-2a51-4b71-9183-1fcf28a492c8
+		summarizeBy: none
+		sourceColumn: Demand/Stock
+
+		annotation SummarizationSetBy = Automatic
+
+	column SupplierJobs
+		dataType: string
+		lineageTag: cfc4f2d8-7cba-4e76-96d4-83ebd69dedf5
+		summarizeBy: none
+		sourceColumn: SupplierJobs
+
+		annotation SummarizationSetBy = Automatic
+
+	column PartDescription
+		dataType: string
+		lineageTag: 31e11cc9-d7d6-4bd3-87de-c249881aa57d
+		summarizeBy: none
+		sourceColumn: PartDescription
+
+		annotation SummarizationSetBy = Automatic
+
+	column Key
+		dataType: string
+		lineageTag: 610b7adc-37dc-47cb-bbd6-abcb44ddfd78
+		summarizeBy: none
+		sourceColumn: Key
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Custom Class ID'
+		dataType: string
+		lineageTag: 2316f464-5d95-4d14-93dd-8ce5dbb7e506
+		summarizeBy: none
+		sourceColumn: Custom Class ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column POSupplyQty
+		dataType: int64
+		formatString: 0.0
+		lineageTag: e558c791-f00f-4839-964b-8cb47738b055
+		summarizeBy: none
+		sourceColumn: POSupplyQty
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'PurchaseOrders.1'
+		dataType: string
+		lineageTag: fd144a39-6dc0-4ce0-954a-72b93c48134a
+		summarizeBy: none
+		sourceColumn: PurchaseOrders.1
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'SupplyQty / POQty'
+		dataType: string
+		lineageTag: 43754f12-437b-4eb3-9c5e-3c99be35e83c
+		summarizeBy: none
+		sourceColumn: SupplyQty / POQty
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'SupplierJobs / PurchaseOrders '
+		dataType: string
+		lineageTag: 8a071196-0c8b-42e3-8ebc-4e3eaf1c86c5
+		summarizeBy: none
+		sourceColumn: "SupplierJobs / PurchaseOrders "
+
+		annotation SummarizationSetBy = Automatic
+
+	column AvgUnitPrice
+		dataType: double
+		formatString: \$#,0.###############;(\$#,0.###############);\$#,0.###############
+		lineageTag: 6b6a7eb2-2e76-4e5b-9c08-7c94c43c7ce2
+		summarizeBy: none
+		sourceColumn: AvgUnitPrice
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column Stock$
+		dataType: decimal
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: aa3088d8-8cad-4622-911b-0f473b7fbeb3
+		summarizeBy: none
+		sourceColumn: Stock$
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column TotalDemandInNext30Days
+		dataType: double
+		lineageTag: c6afd2db-cef9-4b1b-a7b7-365a448dc0e7
+		summarizeBy: none
+		sourceColumn: TotalDemandInNext30Days
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Stock Qty'
+		dataType: double
+		lineageTag: 2fc43d3f-1610-431c-8965-b7407acca5a2
+		summarizeBy: none
+		sourceColumn: Stock Qty
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column MinimumQty
+		dataType: double
+		lineageTag: 7a15bcfb-56b2-4265-a179-d78049ed4cea
+		summarizeBy: none
+		sourceColumn: MinimumQty
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column SupplyQty
+		dataType: double
+		lineageTag: cff5cd7a-f61c-48c4-93cc-96a88d4c45ff
+		summarizeBy: none
+		sourceColumn: SupplyQty
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column TargetQty
+		dataType: double
+		lineageTag: f48feabd-3c9a-4087-95dd-116527c66204
+		summarizeBy: none
+		sourceColumn: TargetQty
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition DemandInNext30Days/Stock = m
+		mode: import
+		source =
+				let
+				    Source = PowerPlatform.Dataflows(null),
+				    Workspaces = Source{[Id="Workspaces"]}[Data],
+				    #"[WORKSPACE_ID_2]" = Workspaces{[workspaceId="[WORKSPACE_ID_2]"]}[Data],
+				    #"[DATAFLOW_ID_2]" = #"[WORKSPACE_ID_2]"{[dataflowId="[DATAFLOW_ID_2]"]}[Data],
+				    Parts_Sply_Dmd_ = #"[DATAFLOW_ID_2]"{[entity="Parts_Sply_Dmd",version=""]}[Data],
+				    #"Filtered Rows" = Table.SelectRows(Parts_Sply_Dmd_, each ([value.PartDtl_DueDate] <> null and [value.PartDtl_DueDate] <> "") and ([value.PartDtl_RequirementFlag] = true)),
+				    #"Removed Other Columns" = Table.SelectColumns(#"Filtered Rows",{"value.PartDtl_PartNum", "value.PartDtl_DueDate", "value.PartDtl_RequirementFlag", "value.PartDtl_Quantity", "value.PartQtyAttr_OnHandQty"}),
+				    #"Grouped Rows1" = Table.Group(#"Removed Other Columns", {"value.PartDtl_PartNum", "value.PartDtl_DueDate", "value.PartDtl_RequirementFlag", "value.PartDtl_Quantity", "value.PartQtyAttr_OnHandQty"}, {{"Count", each Table.RowCount(_), Int64.Type}}),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Grouped Rows1",{{"value.PartDtl_DueDate", type date}}),
+				    #"Added Custom" = Table.AddColumn(#"Changed Type", "Demand in Next 30 Days", each if [value.PartDtl_DueDate] <= Date.AddDays(Date.From(DateTimeZone.UtcNow()),30) and [value.PartDtl_RequirementFlag] then [value.PartDtl_Quantity] else 0),
+				    #"Changed Type1" = Table.TransformColumnTypes(#"Added Custom",{{"Demand in Next 30 Days", type number}}),
+				    #"Renamed Columns1" = Table.RenameColumns(#"Changed Type1",{{"value.PartQtyAttr_OnHandQty", "OnHandQty"}}),
+				    #"Replaced Value1" = Table.ReplaceValue(#"Renamed Columns1",null,0,Replacer.ReplaceValue,{"OnHandQty"}),
+				    #"Merged Queries4" = Table.NestedJoin(#"Replaced Value1", {"value.PartDtl_PartNum"}, #"Part-BAQ", {"PartNum"}, "Part-BAQ", JoinKind.LeftOuter),
+				    #"Expanded Part-BAQ1" = Table.ExpandTableColumn(#"Merged Queries4", "Part-BAQ", {"PartDescription", "MinimumQty", "Custom Class ID"}, {"PartDescription", "MinimumQty", "Custom Class ID"}),
+				    #"Replaced Value7" = Table.ReplaceValue(#"Expanded Part-BAQ1",null,0,Replacer.ReplaceValue,{"MinimumQty"}),
+				    #"Grouped Rows" = Table.Group(#"Replaced Value7", {"value.PartDtl_PartNum", "PartDescription", "OnHandQty", "MinimumQty", "Custom Class ID"}, {{"Demand In Next 30 Days", each List.Sum([Demand in Next 30 Days]), type nullable number}}),
+				    #"Added Custom1" = Table.AddColumn(#"Grouped Rows", "TargetQty", each if [Demand In Next 30 Days] <> 0 and [Demand In Next 30 Days] > [OnHandQty] then ([Demand In Next 30 Days] + [MinimumQty]) - [OnHandQty] else if [MinimumQty] > [OnHandQty] then [MinimumQty] - [OnHandQty] else 0),
+				    #"Changed Type6" = Table.TransformColumnTypes(#"Added Custom1",{{"TargetQty", type number}}),
+				    #"Added Custom3" = Table.AddColumn(#"Changed Type6", "Demand/Stock", each if [TargetQty] > 0 and [Demand In Next 30 Days] > [OnHandQty] then "Demand" else "Stock"),
+				    #"Changed Type7" = Table.TransformColumnTypes(#"Added Custom3",{{"Demand/Stock", type text}}),
+				    #"Duplicated Column" = Table.DuplicateColumn(#"Changed Type7", "value.PartDtl_PartNum", "value.PartDtl_PartNum - Copy"),
+				    #"Duplicated Column1" = Table.DuplicateColumn(#"Duplicated Column", "Demand/Stock", "Demand/Stock - Copy"),
+				    #"Merged Columns" = Table.CombineColumns(#"Duplicated Column1",{"value.PartDtl_PartNum - Copy", "Demand/Stock - Copy"},Combiner.CombineTextByDelimiter("-", QuoteStyle.None),"Key"),
+				    #"Merged Queries" = Table.NestedJoin(#"Merged Columns", {"Key"}, SupplierJobs, {"Key"}, "DemandInNext30Days/Stock", JoinKind.LeftOuter),
+				    #"Expanded DemandInNext30Days/Stock" = Table.ExpandTableColumn(#"Merged Queries", "DemandInNext30Days/Stock", {"SupplyQty", "SupplierJobs"}, {"SupplyQty", "SupplierJobs"}),
+				    #"Renamed Columns" = Table.RenameColumns(#"Expanded DemandInNext30Days/Stock",{{"OnHandQty", "Stock Qty"}}),
+				    #"Grouped Rows2" = Table.Group(#"Renamed Columns", {"value.PartDtl_PartNum", "Demand/Stock", "Key", "SupplierJobs", "Custom Class ID", "PartDescription", "Stock Qty", "MinimumQty", "SupplyQty", "TargetQty"}, {{"TotalDemandInNext30Days", each List.Sum([Demand In Next 30 Days]), type nullable number}}),
+				    #"Merged Queries2" = Table.NestedJoin(#"Grouped Rows2", {"Key"}, PurchaseOrders, {"Key"}, "PurchaseOrders", JoinKind.LeftOuter),
+				    #"Expanded PurchaseOrders" = Table.ExpandTableColumn(#"Merged Queries2", "PurchaseOrders", {"POSupplyQty", "PurchaseOrders"}, {"POSupplyQty", "PurchaseOrders.1"}),
+				    #"Replaced Value3" = Table.ReplaceValue(#"Expanded PurchaseOrders",null,0,Replacer.ReplaceValue,{"POSupplyQty"}),
+				    #"Rounded Up" = Table.TransformColumns(#"Replaced Value3",{{"POSupplyQty", Number.RoundUp, Int64.Type}}),
+				    #"Replaced Value5" = Table.ReplaceValue(#"Rounded Up",null,"-",Replacer.ReplaceValue,{"PurchaseOrders.1"}),
+				    #"Duplicated Column2" = Table.DuplicateColumn(#"Replaced Value5", "SupplyQty", "SupplyQty - Copy"),
+				    #"Duplicated Column3" = Table.DuplicateColumn(#"Duplicated Column2", "POSupplyQty", "POSupplyQty - Copy"),
+				    #"Merged Columns2" = Table.CombineColumns(Table.TransformColumnTypes(#"Duplicated Column3", {{"SupplyQty - Copy", type text}, {"POSupplyQty - Copy", type text}}, "en-US"),{"SupplyQty - Copy", "POSupplyQty - Copy"},Combiner.CombineTextByDelimiter(" / ", QuoteStyle.None),"SupplyQty / POQty"),
+				    #"Duplicated Column4" = Table.DuplicateColumn(#"Merged Columns2", "SupplierJobs", "SupplierJobs - Copy"),
+				    #"Duplicated Column5" = Table.DuplicateColumn(#"Duplicated Column4", "PurchaseOrders.1", "PurchaseOrders.1 - Copy"),
+				    #"Merged Columns3" = Table.CombineColumns(#"Duplicated Column5",{"SupplierJobs - Copy", "PurchaseOrders.1 - Copy"},Combiner.CombineTextByDelimiter(" / ", QuoteStyle.None),"SupplierJobs / PurchaseOrders "),
+				    #"Merged Queries3" = Table.NestedJoin(#"Merged Columns3", {"value.PartDtl_PartNum"}, StockPrice, {"PartNum.2"}, "StockPrice", JoinKind.LeftOuter),
+				    #"Expanded StockPrice" = Table.ExpandTableColumn(#"Merged Queries3", "StockPrice", {"AvgUnitPrice"}, {"AvgUnitPrice"}),
+				    #"Replaced Value" = Table.ReplaceValue(#"Expanded StockPrice",null,0,Replacer.ReplaceValue,{"AvgUnitPrice"}),
+				    #"Added Custom2" = Table.AddColumn(#"Replaced Value", "Stock$", each if [Stock Qty] > 0 then [Stock Qty]*[AvgUnitPrice] else 0),
+				    #"Changed Type2" = Table.TransformColumnTypes(#"Added Custom2",{{"Stock$", Currency.Type}}),
+				    #"Filtered Rows1" = Table.SelectRows(#"Changed Type2", each ([Custom Class ID] <> null))
+				in
+				    #"Filtered Rows1"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

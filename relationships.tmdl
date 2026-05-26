@@ -1,0 +1,10 @@
+relationship 83530967-43d9-4518-ad8a-51e71cb82281
+	joinOnDateBehavior: datePartOnly
+	fromColumn: 'Refresh TimeStamp'.'Refresh TimeStamp'
+	toColumn: LocalDateTable_c42c530d-bded-4f8c-9258-53262b215e12.Date
+
+relationship bd762a18-f7c8-622d-dd41-dd01e14b63bb
+	crossFilteringBehavior: bothDirections
+	fromColumn: Demand/StockOperations.Key
+	toColumn: DemandInNext30Days/Stock.Key
+
