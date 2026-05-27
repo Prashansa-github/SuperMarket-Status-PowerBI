@@ -23,10 +23,12 @@ Before this dashboard, planners had no single view to distinguish urgently neede
 **ERP System:** Epicor Kinetic
 
 ---
-## 📈 Impact **Before this dashboard:** 
+## 📈 Impact 
+**Before this dashboard:** 
 - Planners spent 2-3 hours daily distinguishing urgent parts from stock builds via manual spreadsheets
 - No single source of truth; data scattered across ERP, email, and local files - Expediting decisions were reactive, not data-driven
--  **After deployment:** - Reduced manual planning time by ~10-12 hours/week per planner (2-3 hours/day → 15-20 minutes/day)
+**After deployment:**
+- Reduced manual planning time by ~10-12 hours/week per planner (2-3 hours/day → 15-20 minutes/day)
 - Single-view inventory health metric enables faster prioritization
 -  Inventory visibility enables better demand forecasting and stock optimization
 -  **Quantified ROI:** - ~10 hours/week saved across planning team = $250/week productivity gain 
